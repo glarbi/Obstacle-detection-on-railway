@@ -1,23 +1,16 @@
 import numpy as np
-import os
 import cv2
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 
 
-def get_M_Minv():
+def get_M_Minverse():
     #src = np.float32([[(600, 1080), (850, 300), (1600, 1080), (1000, 300)]])
-    #dst = np.float32([[(500, 1080), (0, 0), (1500, 1080), (1300, 0)]])-----> RailTest1.mp4
+    #dst = np.float32([[(500, 1080), (0, 0), (1500, 1080), (1300, 0)]])#-----> RailTest1.mp4
 
     #src = np.float32([[(680,1080),(920,520),(1245,1080),(995,520)]])
-    #dst = np.float32([[(0, 1080), (0, 0), (1920, 1080), (1920, 0)]])--------->RailTest2.mp4
+    #dst = np.float32([[(0, 1080), (0, 0), (1920, 1080), (1920, 0)]])#--------->RailTest2.mp4
 
-    #src = np.float32([[(680,1080),(920,520),(1245,1080),(1050,520)]])
-    #dst = np.float32([[(0, 1080), (0, 0), (1920, 1080), (1920, 0)]])--------->RailTest3.mp4___CurveRailway
-    
-    src = np.float32([[(680,1080),(920,520),(1245,1080),(995,520)]])
-    dst = np.float32([[(0, 1080), (0, 0), (1920, 1080), (1920, 0)]])
-    
+    src = np.float32([[(680,1080),(920,520),(1245,1080),(1050,520)]])
+    dst = np.float32([[(0, 1080), (0, 0), (1920, 1080), (1920, 0)]])#--------->RailTest3.mp4___CurveRailway
     
     M = cv2.getPerspectiveTransform(src, dst)
     Minv = cv2.getPerspectiveTransform(dst,src)
@@ -41,65 +34,6 @@ def abs_sobel_thresh(img, orient='x', thresh_min=0, thresh_max=255):
     binary_output[(scaled_sobel >= thresh_min) & (scaled_sobel <= thresh_max)] = 1
 
     # Return the result
-    return binary_output
-
-def mag_thresh(img, sobel_kernel=3, mag_thresh=(0, 255)):
-    # Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    # Take both Sobel x and y gradients
-    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
-    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
-    # Calculate the gradient magnitude
-    gradmag = np.sqrt(sobelx**2 + sobely**2)
-    # Rescale to 8 bit
-    scale_factor = np.max(gradmag)/255 
-    gradmag = (gradmag/scale_factor).astype(np.uint8) 
-    # Create a binary image of ones where threshold is met, zeros otherwise
-    binary_output = np.zeros_like(gradmag)
-    binary_output[(gradmag >= mag_thresh[0]) & (gradmag <= mag_thresh[1])] = 1
-
-    # Return the binary image
-    return binary_output
-
-def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
-    # Grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    # Calculate the x and y gradients
-    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
-    sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
-    # Take the absolute value of the gradient direction, 
-    # apply a threshold, and create a binary image result
-    absgraddir = np.arctan2(np.absolute(sobely), np.absolute(sobelx))
-    binary_output =  np.zeros_like(absgraddir)
-    binary_output[(absgraddir >= thresh[0]) & (absgraddir <= thresh[1])] = 1
-
-    # Return the binary image
-    return binary_output
-
-def hls_select(img,channel='s',thresh=(0, 255)):
-    hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
-    if channel=='h':
-        channel = hls[:,:,0]
-    elif channel=='l':
-        channel=hls[:,:,1]
-    else:
-        channel=hls[:,:,2]
-    binary_output = np.zeros_like(channel)
-    binary_output[(channel > thresh[0]) & (channel <= thresh[1])] = 1
-    return binary_output
-
-def luv_select(img, thresh=(0, 255)):
-    luv = cv2.cvtColor(img, cv2.COLOR_RGB2LUV)
-    l_channel = luv[:,:,0]
-    binary_output = np.zeros_like(l_channel)
-    binary_output[(l_channel > thresh[0]) & (l_channel <= thresh[1])] = 1
-    return binary_output
-
-def lab_select(img, thresh=(0, 255)):
-    lab = cv2.cvtColor(img, cv2.COLOR_RGB2Lab)
-    b_channel = lab[:,:,2]
-    binary_output = np.zeros_like(b_channel)
-    binary_output[(b_channel > thresh[0]) & (b_channel <= thresh[1])] = 1
     return binary_output
 
 def find_line(binary_warped):
@@ -170,7 +104,7 @@ def find_line(binary_warped):
     left_fit = np.polyfit(lefty, leftx, 3)
     right_fit = np.polyfit(righty, rightx, 3)
     
-    return left_fit, right_fit, left_lane_inds, right_lane_inds
+    return left_fit, right_fit
 
 def find_line_by_previous(binary_warped,left_fit,right_fit):
     nonzero = binary_warped.nonzero()
@@ -193,8 +127,7 @@ def find_line_by_previous(binary_warped,left_fit,right_fit):
     # Fit a second order polynomial to each
     left_fit = np.polyfit(lefty, leftx, 3)
     right_fit = np.polyfit(righty, rightx, 3)
-    return left_fit, right_fit, left_lane_inds, right_lane_inds
-
+    return left_fit, right_fit
 
 def draw_area(undist,binary_warped,Minv,left_fit, right_fit):
     # Generate x and y values for plotting
@@ -217,47 +150,6 @@ def draw_area(undist,binary_warped,Minv,left_fit, right_fit):
     # Warp the blank back to original image space using inverse perspective matrix (Minv)
     undist = np.array(undist)
     newwarp = cv2.warpPerspective(color_warp, Minv, (undist.shape[1], undist.shape[0]))
-    cv2.imwrite('./area.jpg', newwarp)
-    cv2.imshow("new warp",newwarp)
     # Combine the result with the original image
     result = cv2.addWeighted(undist, 1, newwarp, 0.3, 0)
     return result,newwarp
-
-def calculate_curv_and_pos(binary_warped,left_fit, right_fit):
-    # Define y-value where we want radius of curvature
-    ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
-    leftx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
-    rightx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
-    # Define conversions in x and y from pixels space to meters
-    ym_per_pix = 30/720 # meters per pixel in y dimension
-    xm_per_pix = 3.7/700 # meters per pixel in x dimension
-    y_eval = np.max(ploty)
-    # Fit new polynomials to x,y in world space
-    left_fit_cr = np.polyfit(ploty*ym_per_pix, leftx*xm_per_pix, 2)
-    right_fit_cr = np.polyfit(ploty*ym_per_pix, rightx*xm_per_pix, 2)
-    # Calculate the new radii of curvature
-    left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
-    right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
-    
-    curvature = ((left_curverad + right_curverad) / 2)
-    #print(curvature)
-    lane_width = np.absolute(leftx[719] - rightx[719])
-    lane_xm_per_pix = 3.7 / lane_width
-    veh_pos = (((leftx[719] + rightx[719]) * lane_xm_per_pix) / 2.)
-    cen_pos = ((binary_warped.shape[1] * lane_xm_per_pix) / 2.)
-    distance_from_center = cen_pos - veh_pos
-    return curvature,distance_from_center
-
-
-
-def draw_values(img,curvature,distance_from_center):
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    radius_text = "Radius of Curvature: %sm"%(round(curvature))
-    
-    if distance_from_center>0:
-        pos_flag = 'right'
-    else:
-        pos_flag= 'left'
-        
-    cv2.putText(img,radius_text,(100,100), font, 1,(255,0,0),2)
-    return img
